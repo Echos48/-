@@ -9,6 +9,7 @@ using BepInEx.Configuration;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
+using System.Diagnostics;
 
 namespace ChillAIMod
 {
@@ -25,6 +26,8 @@ namespace ChillAIMod
         private ConfigEntry<string> _targetLangConfig;
         private ConfigEntry<string> _personaConfig;
         private ConfigEntry<string> _chatApiUrlConfig;
+        private ConfigEntry<float> _TTSServicePathConfig;
+        private ConfigEntry<float> _LaunchTTSServiceConfig;
 
         // --- 新增窗口大小配置 ---
         private ConfigEntry<float> _windowWidthConfig;
@@ -105,13 +108,14 @@ namespace ChillAIMod
 
             _sovitsUrlConfig = Config.Bind("2. Audio", "SoVITS_URL", "http://127.0.0.1:9880", "GPT-SoVITS API URL");
             _refAudioPathConfig = Config.Bind("2. Audio", "RefAudioPath", @"D:\Voice_MainScenario_27_016.wav", "Ref Audio Path");
+            _TTSServicePathConfig = Config.Bind("2. Audio", "TTS_Service_Path", @"D:\GPT-SoVITS\GPT-SoVITS-v2pro-20250604-nvidia50\run_api.bat", "TTS Service Path");
+            _LaunchTTSServiceConfig = Config.Bind("2. Audio", "LaunchTTSService", true, "是否在游戏启动时自动启动 TTS 服务");
             _promptTextConfig = Config.Bind("2. Audio", "PromptText", "君が集中した時のシータ波を検出して、リンクをつなぎ直せば元通りになるはず。", "Ref Audio Text");
             _promptLangConfig = Config.Bind("2. Audio", "PromptLang", "ja", "Ref Lang");
             _targetLangConfig = Config.Bind("2. Audio", "TargetLang", "ja", "Target Lang");
 
             // 【新增音量配置】
             _voiceVolumeConfig = Config.Bind("2. Audio", "VoiceVolume", 1.0f, "语音播放音量 (0.0 - 1.0)");
-
 
             _personaConfig = Config.Bind("3. Persona", "SystemPrompt", DefaultPersona, "System Prompt");
 
@@ -135,6 +139,19 @@ namespace ChillAIMod
             _tempWidthString = _windowWidthConfig.Value.ToString("F0");
             _tempHeightString = _windowHeightConfig.Value.ToString("F0");
             _tempVolumeString = _voiceVolumeConfig.Value.ToString("F2");
+
+            if (_LaunchTTSServiceConfig.Value && File.Exists(_TTSServicePathConfig.Value))
+            {
+                try
+                {
+                    Process.Start(_TTSServicePathConfig.Value);
+                    Logger.LogInfo("已启动 TTS 服务");
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError($"启动 TTS 服务失败: {ex.Message}");
+                }
+            }
 
             Logger.LogInfo(">>> AIMod V1.1.0  已加载 <<<");
         }
@@ -280,6 +297,10 @@ namespace ChillAIMod
                 _refAudioPathConfig.Value = GUILayout.TextField(_refAudioPathConfig.Value);
                 GUILayout.Label("音频台词:");
                 _promptTextConfig.Value = GUILayout.TextArea(_promptTextConfig.Value, GUILayout.Height(50));
+                GUILayout.Label("TTS 服务路径 (run_api.bat):");
+                _TTSServicePathConfig.Value = GUILayout.TextField(_TTSServicePathConfig.Value);
+                GUILayout.Space(5);
+                _TLaunchTTSServiceConfig.Value = GUILayout.Toggle(_LaunchTTSServiceConfig.Value, "启动时自动运行 TTS 服务");
 
                 // 【新增音量控制 UI】
                 GUILayout.Space(5);
