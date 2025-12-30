@@ -38,6 +38,13 @@ namespace ChillAIMod
         // --- 新增音量配置 ---
         private ConfigEntry<float> _voiceVolumeConfig;
 
+        // --- 录音相关变量 ---
+        private AudioClip _recordingClip;
+        private bool _isRecording = false;
+        private string _microphoneDevice = null;
+        private const int RecordingFrequency = 16000; // 16kHz 对 Whisper 足够且省带宽
+        private const int MaxRecordingSeconds = 30;   // 最长录 30 秒
+
         // ================= 【UI 变量】 =================
         private bool _showInputWindow = false;
         private bool _showSettings = false;
@@ -448,7 +455,10 @@ namespace ChillAIMod
             GUILayout.Space(5);
             GUI.backgroundColor = _isProcessing ? Color.gray : Color.cyan;
 
-            if (GUILayout.Button(_isProcessing ? "思考中..." : "发送 (Send)", GUILayout.Height(40)))
+            GUILayout.BeginHorizontal(); // 开始水平布局
+
+            // --- 发送按钮 (宽度调小一点，留位置给录音) ---
+            if (GUILayout.Button(_isProcessing ? "思考中..." : "发送", GUILayout.Height(40), GUILayout.Width(_windowRect.width * 0.5f)))
             {
                 if (!string.IsNullOrEmpty(_playerInput) && !_isProcessing)
                 {
@@ -456,6 +466,52 @@ namespace ChillAIMod
                     _playerInput = "";
                 }
             }
+
+            // --- 新增：录音按钮 (按住说话) ---
+            // 1. 设置颜色
+            GUI.backgroundColor = _isRecording ? Color.red : Color.green;
+            string micBtnText = _isRecording ? "🔴 松开结束" : "🎤 按住说话";
+
+            // 2. 关键步骤：只申请区域，不绘制，也不处理逻辑
+            // 这样我们就拿到了按钮应该在的位置，但不会吞掉事件
+            Rect btnRect = GUILayoutUtility.GetRect(new GUIContent(micBtnText), GUI.skin.button, GUILayout.Height(40));
+
+            // 3. 处理输入事件 (此时事件还没被吞掉)
+            Event e = Event.current;
+            int controlID = GUIUtility.GetControlID(FocusType.Passive);
+
+            switch (e.type)
+            {
+                case EventType.MouseDown:
+                    if (btnRect.Contains(e.mousePosition) && !_isProcessing)
+                    {
+                        // 鼠标在按钮区域按下 -> 开始录音
+                        // 把这控件设为热点，防止鼠标移出后无法检测 MouseUp
+                        GUIUtility.hotControl = controlID; 
+                        StartRecording();
+                        e.Use(); // 标记事件已处理
+                    }
+                    break;
+
+                case EventType.MouseUp:
+                    // 如果我们是当前的热点控件 -> 停止录音
+                    if (GUIUtility.hotControl == controlID)
+                    {
+                        // 无论鼠标是否还在按钮内，只要松开就停止
+                        GUIUtility.hotControl = 0; // 释放热点
+                        StopRecordingAndRecognize();
+                        e.Use();
+                    }
+                    break;
+            }
+
+            // 4. 最后绘制按钮的外观 (使用 Box 就不会产生交互逻辑，只负责显示)
+            // 这样看起来它是个按钮，但交互逻辑完全由上面的 switch 控制
+            GUI.Box(btnRect, micBtnText, GUI.skin.button);
+
+            // ================== 【结束】 ==================
+
+            GUILayout.EndHorizontal();
 
             GUILayout.EndVertical();
             GUILayout.EndScrollView(); // 结束外层滚动
@@ -531,6 +587,52 @@ namespace ChillAIMod
             return sb.ToString();
         }
 
+        // ================= 【新增 ASR 请求逻辑】 =================
+        IEnumerator SendAudioToASR(byte[] wavData)
+        {
+            _isProcessing = true; // 锁定 UI，显示思考中
+            string url = _sovitsUrlConfig.Value.TrimEnd('/') + "/asr";
+
+            WWWForm form = new WWWForm();
+            form.AddBinaryData("file", wavData, "voice.wav", "audio/wav");
+
+            using (UnityWebRequest www = UnityWebRequest.Post(url, form))
+            {
+                yield return www.SendWebRequest();
+
+                if (www.result == UnityWebRequest.Result.Success)
+                {
+                    string json = www.downloadHandler.text;
+                    Logger.LogInfo($"[ASR] 服务器返回: {json}");
+
+                    // 简单的 JSON 解析: {"text": "你好"}
+                    string recognizedText = ExtractJsonValue(json, "text");
+
+                    if (!string.IsNullOrEmpty(recognizedText))
+                    {
+                        // 【核心功能】将识别结果填入输入框
+                        // 如果输入框已有文字，则追加在后面（加个空格）
+                        if (string.IsNullOrEmpty(_playerInput))
+                            _playerInput = recognizedText;
+                        else
+                            _playerInput += " " + recognizedText;
+                    }
+                }
+                else
+                {
+                    Logger.LogError($"[ASR] 请求失败: {www.error}");
+                }
+            }
+
+            _isProcessing = false; // 解锁 UI
+        }
+        
+        // 简易 JSON 提取辅助函数
+        private string ExtractJsonValue(string json, string key)
+        {
+            var match = Regex.Match(json, $"\"{key}\"\\s*:\\s*\"(.*?)\"");
+            return match.Success ? Regex.Unescape(match.Groups[1].Value) : "";
+        }
 
         IEnumerator AIProcessRoutine(string prompt)
         {
@@ -909,6 +1011,63 @@ namespace ChillAIMod
             }
         }
 
+        // ================= 【新增录音控制】 =================
+        void StartRecording()
+        {
+            Logger.LogInfo($"[Mic Debug] 检测到设备数量: {Microphone.devices.Length}");
+            if (Microphone.devices.Length > 0)
+            {
+                foreach (var d in Microphone.devices)
+                {
+                    Logger.LogInfo($"[Mic Debug] 可用设备: {d}");
+                }
+            }
+            // --------------------
+
+            if (Microphone.devices.Length == 0)
+            {
+                Logger.LogError("未检测到麦克风！(Microphone.devices is empty)");
+                // 可以在屏幕上显示个错误提示
+                _playerInput = "[Error: No Mic Found]"; 
+                return;
+            }
+
+            _microphoneDevice = Microphone.devices[0];
+            _recordingClip = Microphone.Start(_microphoneDevice, false, MaxRecordingSeconds, RecordingFrequency);
+            _isRecording = true;
+            Logger.LogInfo($"开始录音: {_microphoneDevice}");
+        }
+
+        void StopRecordingAndRecognize()
+        {
+            if (!_isRecording) return;
+
+            // 1. 停止录音
+            int position = Microphone.GetPosition(_microphoneDevice);
+            Microphone.End(_microphoneDevice);
+            _isRecording = false;
+            Logger.LogInfo($"停止录音，采样点: {position}");
+
+            // 2. 剪裁有效音频 (去掉末尾的静音/空白部分)
+            if (position <= 0) return; // 录音太短
+
+            AudioClip validClip = TrimAudioClip(_recordingClip, position);
+
+            // 3. 编码并发送
+            byte[] wavData = EncodeToWAV(validClip);
+            StartCoroutine(SendAudioToASR(wavData));
+        }
+
+        AudioClip TrimAudioClip(AudioClip original, int endPosition)
+        {
+            float[] data = new float[endPosition * original.channels];
+            original.GetData(data, 0);
+
+            AudioClip newClip = AudioClip.Create("TrimmedVoice", endPosition, original.channels, original.frequency, false);
+            newClip.SetData(data, 0);
+            return newClip;
+        }
+
         string ExtractContentRegex(string json)
         {
             try { var match = Regex.Match(json, "\"content\"\\s*:\\s*\"(.*?)\""); return match.Success ? Regex.Unescape(match.Groups[1].Value) : null; }
@@ -1001,6 +1160,78 @@ namespace ChillAIMod
             catch (Exception ex)
             {
                 Logger.LogWarning($"[TTS Cleanup] taskkill 失败: {ex.Message}");
+            }
+        }
+
+        // ================= 【新增 WAV 编码工具】 =================
+        private byte[] EncodeToWAV(AudioClip clip)
+        {
+            using (MemoryStream stream = new MemoryStream())
+            {
+                // 1. 获取数据
+                float[] samples = new float[clip.samples * clip.channels];
+                clip.GetData(samples, 0);
+
+                // 2. 写入 WAV 头 (44 bytes)
+                int hz = clip.frequency;
+                int channels = clip.channels;
+                int samplesCount = samples.Length;
+
+                Byte[] riff = Encoding.UTF8.GetBytes("RIFF");
+                stream.Write(riff, 0, 4);
+
+                Byte[] chunkSize = BitConverter.GetBytes(samplesCount * 2 + 36);
+                stream.Write(chunkSize, 0, 4);
+
+                Byte[] wave = Encoding.UTF8.GetBytes("WAVE");
+                stream.Write(wave, 0, 4);
+
+                Byte[] fmt = Encoding.UTF8.GetBytes("fmt ");
+                stream.Write(fmt, 0, 4);
+
+                Byte[] subChunk1 = BitConverter.GetBytes(16);
+                stream.Write(subChunk1, 0, 4);
+
+                UInt16 one = 1;
+                Byte[] audioFormat = BitConverter.GetBytes(one);
+                stream.Write(audioFormat, 0, 2);
+
+                Byte[] numChannels = BitConverter.GetBytes(channels);
+                stream.Write(numChannels, 0, 2);
+
+                Byte[] sampleRate = BitConverter.GetBytes(hz);
+                stream.Write(sampleRate, 0, 4);
+
+                Byte[] byteRate = BitConverter.GetBytes(hz * channels * 2);
+                stream.Write(byteRate, 0, 4);
+
+                UInt16 blockAlign = (ushort)(channels * 2);
+                stream.Write(BitConverter.GetBytes(blockAlign), 0, 2);
+
+                UInt16 bps = 16;
+                Byte[] bitsPerSample = BitConverter.GetBytes(bps);
+                stream.Write(bitsPerSample, 0, 2);
+
+                Byte[] datastring = Encoding.UTF8.GetBytes("data");
+                stream.Write(datastring, 0, 4);
+
+                Byte[] subChunk2 = BitConverter.GetBytes(samplesCount * 2);
+                stream.Write(subChunk2, 0, 4);
+
+                // 3. 写入数据 (将 float -1.0~1.0 转换为 short -32768~32767)
+                Int16[] intData = new Int16[samplesCount];
+                Byte[] bytesData = new Byte[samplesCount * 2];
+                int rescaleFactor = 32767;
+
+                for (int i = 0; i < samplesCount; i++)
+                {
+                    intData[i] = (short)(samples[i] * rescaleFactor);
+                    Byte[] byteArr = BitConverter.GetBytes(intData[i]);
+                    byteArr.CopyTo(bytesData, i * 2);
+                }
+
+                stream.Write(bytesData, 0, bytesData.Length);
+                return stream.ToArray();
             }
         }
     }
