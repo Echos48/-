@@ -36,7 +36,7 @@
      pause
      ```
      然后重命名文件，将 `.txt` 后缀去掉即可。
-   - Linux 用户：Nvidia 显卡用户推荐使用 Docker，因为 Docker 具有稳定、易迁移、方便统一管理的特性。若不想使用 Docker 或显卡不是 Nvidia 的，则需要使用 conda 来运行，请自行参考 [GPT-SoVITS 的 README](https://github.com/RVC-Boss/GPT-SoVITS#linux)，**注意不是文档也不是 User guide**。以下是使用 Docker 的步骤：
+   - Linux 用户：Nvidia 显卡用户推荐使用 Docker，因为 Docker 具有稳定、易迁移、方便统一管理的特性。若不想使用 Docker 或显卡不是 Nvidia 的，则需要使用 conda 来运行，请自行参考 [GPT-SoVITS 的 README](https://github.com/RVC-Boss/GPT-SoVITS#linux)，**注意不是文档也不是 User guide**；也可参考本仓库的 `GPT-SoVITS-Linux` 目录。以下是使用 Docker 的步骤：
      - 安装 Docker、Docker Compose、Nvidia Container Toolkit 三件套，方法分别参见 [Install | Docker Docs](https://docs.docker.com/engine/install/)、[Plugin | Docker Docs](https://docs.docker.com/compose/install/linux/#install-using-the-repository) 和 [Installing the NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)。
      - 克隆 [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS)：
        ```bash
