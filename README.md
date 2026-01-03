@@ -9,22 +9,23 @@
 - 要求 AI 输出严格格式：`[Emotion] ||| JAPANESE TEXT ||| CHINESE TRANSLATION`，插件根据情感切换动作并播放日语语音，显示中文字幕。
 - 若 AI 未按格式返回，只显示字幕并以思考动作代替语音（避免错误语句被 TTS 读出）。
 
-## 安装 Mod 本体
+## 安装说明
+### 安装 Mod 本体
 1. 下载 Mod
    - 从 [Releases](https://github.com/qzrs777/AIChat/releases) 下载 `AIChatMod.zip` 并解压。
      - 推荐使用带版本号的稳定版；
        Preview Build 属于预览版，比稳定版更新，相对来说有 bug 的概率会更高一些（实际结果也可能反过来）。
 
-2. 安装 Mod
+2. 安装 BepInEx 前置
    - 在 Steam 右键游戏 -> 管理 -> 浏览本地文件（或直接定位游戏根目录）。
    - 将压缩包内的 `BepInEx_*` 下的内容复制到游戏根目录。
      - Linux 用户请注意：Mod 能被加载的原理是，Windows 中的一些程序在启动时，同目录下的 DLL 文件（这里的是 `winhttp.dll`）比原本的 DLL 文件具有更高的优先级，从而被加载；但是在 Linux 下，Proton 自己的 DLL 文件具有更高的优先级，会无视同目录下的 `winhttp.dll`。所以，你需要在 Steam 的此游戏的设置里，将启动选项填写为 `WINEDLLOVERRIDES="winhttp=n,b" %command%` （其中 `winhttp` 就是 `winhttp.dll` 的文件名）。
    - 运行一次游戏。
      - 这一步用于生成插件目录结构，包括 `BepInEx` 目录下的 `config`、`core`、`patchers`、`plugins` 等目录。
-     - 如果没有生成目录结构，说明 Mod 未正确加载，请先解决此问题，继续下一步是无意义的。
-   - 将 `AIChat.dll` 放入 `BepInEx` 下的 `plugins` 目录中。
 
-3. 配置 Mod
+3. 安装 Mod
+   - 请务必确保上一步已生成目录结构。否则，说明 BepInEx 前置未正确加载（在解决此问题之前，继续下一步是无意义的）。
+   - 将 `AIChat.dll` 放入 `BepInEx` 下的 `plugins` 目录中。
    - 打开游戏，按 F9 键调出 Mod 的界面。
    - 配置好 API URL 与 API Key 以及 Model Name 并保存，此时就可以在“与聪音对话”的文本框里进行对话了（仅文字；下一节将配置语音）。
      - API URL 示例：
@@ -32,7 +33,7 @@
        - Ollama：`http://127.0.0.1:11434/v1/chat/completions`
        - Gemini：`https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`
 
-## 语音配置（可选）
+### 语音配置（可选）
 本项目依赖 [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) 的 WebAPI v2 来生成语音，
 而它的文档着重于 WebUI 和在线云服务，
 就我们的目的（本地部署 WebAPI v2）而言较为混乱，所以这里提供较为详细的说明。
@@ -77,7 +78,7 @@
    > ```
 
 3. 在 Mod 中配置
-   - 务必确保上一步语音测试成功。若否，说明 GPT-SoVITS 未正常运行，请先解决此问题，继续下一步是无意义的。
+   - 请务必确保上一步语音测试成功。否则，说明 TTS 服务未正常运行（在解决此问题之前，继续下一步是无意义的）。
    - 在游戏按 F9 键调出 Mod 的界面，聊天以进行测试。
    - 下面的参数默认都已填好，**一般不要改动**，如下：
      - `音频路径(.wav)` ：`Voice_MainScenario_27_016.wav`
@@ -89,10 +90,20 @@
    - 前面我们已经将 `api_v2_ex.py` 复制到 GPT-SoVITS 根目录下，但为了稳定起见，之前启动的是 `api_v2.py`，它是不支持语音识别的。
    - 现在，将前面启动 WebAPI v2 的有关代码中的 `api_v2.py` 改为 `api_v2_ex.py`，再重新启动 WebAPI v2 服务。
    - 确保电脑连接的麦克风能正常运行（可以[在网上搜索 `麦克风在线测试`](https://www.bing.com/search?q=%E9%BA%A6%E5%85%8B%E9%A3%8E%E5%9C%A8%E7%BA%BF%E6%B5%8B%E8%AF%95)）。
-   - 在游戏中的 Mod 界面，左键按住 `按住说话` 按钮，对着麦克风说话，然后松开。
+   - 测试使用：在游戏中的 Mod 界面，左键按住 `按住说话` 按钮，对着麦克风说话，然后松开。等待片刻，角色将以语音回复。
 
-## 配置（游戏内设置面板 / Config 文件键）
-插件通过 BepInEx 配置项保存，下列为重要项（在设置面板中可直接修改）
+## 使用与设置
+
+### 游戏内界面的使用
+- 打开/关闭控制台：按 F9 或 F10（切换）。
+- 拖拽右下角调整窗口大小；放开鼠标会把新尺寸保存到配置。
+- 对话文本会自动插入换行以避免超出屏幕。
+
+### 配置项与配置文件
+游戏内 Mod 界面中的设置将保存到 BepInEx 的配置文件（即游戏目录下的 `BepInEx/config/com.username.chillaimod.cfg` 中）。
+
+以下是部分配置项的说明。
+
 - 1. General
   - ApiUrl — 聊天 API 地址（例如 `https://openrouter.ai/api/v1/chat/completions`, `http://127.0.0.1:11434/v1/chat/completions` for ollama, `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` for gemini）
   - APIKey — 聊天 API Key
@@ -109,54 +120,33 @@
 - 4. UI
   - WindowWidth / WindowHeightBase — 控制台窗口宽度与基础高度
 
-设置面板功能
+### 设置面板功能
 - 音量滑块与精确输入（文本框 + 应用按钮）
 - 窗口宽高滑块/文本输入 + 应用
-- 保存所有配置按钮（会写入 BepInEx 的 config）
+- 保存所有配置按钮（写入 BepInEx 的配置文件）
 
-## 游戏内使用
-- 打开/关闭控制台：按 F9 或 F10（切换）
-- 在控制台输入文本后点击「发送 (Send)」，插件会将用户输入和 SystemPrompt 发给 LLM，接收响应并处理
-  - 如果响应符合 `[Emotion] ||| 日语 ||| 中文` 格式
-    - 提取情感标签驱动角色动作
-    - 用日语部分请求本地 TTS 生成音频并播放（仅当检测到日文假名）
-    - 显示中文字幕（自动换行处理）
-  - 否则：跳过 TTS，仅显示字幕并以思考动作（Think）作为回退
-
-UI 其他
-- 支持拖拽右下角调整窗口大小；放开鼠标会把新尺寸保存到配置。
-- 对话文本会自动插入换行以避免超出屏幕。
-
-## AI 输出格式（必须）
-必须严格遵守以下三段格式（中间用 `|||` 分隔）
+### AI 输出格式与 Persona
+为了正确解析 AI 返回的结果，其输出的格式必须严格遵守以下三段格式（中间用 `|||` 分隔）
+```plain
 [Emotion] ||| JAPANESE TEXT ||| CHINESE TRANSLATION
+```
+其中 Emotion 可选值为：Happy、Confused、Sad、Fun、Agree、Drink、Wave、Think
 
 示例
-- [Wave] ||| やあ、準備はいい？ ||| 嗨，准备好了吗？
+```plain
+[Wave] ||| やあ、準備はいい？ ||| 嗨，准备好了吗？
+```
 
-可用情感（示例）：Happy、Confused、Sad、Fun、Agree、Drink、Wave、Think
+而为了达到上面的要求，就需要合适的 Persona（或者说 SystemPrompt）。插件内置了一个示例 SystemPrompt（见 [AIChat/AIMod.cs 的 DefaultPersona](https://github.com/qzrs777/AIChat/blob/57f8352377798334b44c5c3a3c8298ae2381b0dc/AIChat/AIMod.cs#L85-L110)），示范如何强制 AI 始终以日语语音输出，并给出格式约束（请在设置中编辑以适配你的角色）。
 
-## 调试与常见问题
-- 没有声音
-  - 确认已下载并正确配置本地 VITS 模型（EPIT、model 名称等）。
-  - 检查 SoVITS_URL 是否正确并能从浏览器/工具访问（如 `http://127.0.0.1:9880/tts`）。
-  - 确认 RefAudioPath 指向存在的 .wav 文件。
-- 插件没有生效 / 找不到 plugins 文件夹
-  - 运行一次游戏以生成必要的目录结构；然后将 DLL 放入 `plugins`。
-- AI 返回中文但被 TTS 读出发音异常
-  - 插件会检测是否含日文假名；若无假名则不会调用 TTS（仅显示字幕）。若你确实想让中文也生成语音，请确保 TTS 支持中文并在插件中调整 TargetLang。
-- TTS 报错或返回空音频
-  - 检查 GPT-SoVITS 日志。
-  - Mod 日志（游戏目录下的 `BepInEx` 中的 `LogOutput.log`）会打印 TTS 错误和响应文本，作为排查依据，尤其注意请求发送的 JSON 数据（插件在请求体中会传入 `text`、`text_lang`、`ref_audio_path`、`prompt_text`、`prompt_lang`）。
+> 具体的流程是：
+> - 用户在控制台输入文本后点击`发送`，将文本和 SystemPrompt 发送至 AI 的 API，再处理返回的响应。
+> - 如果响应符合 `[Emotion] ||| 日语 ||| 中文` 格式：
+>   - 从 `[Emotion]` 提取情感标签。
+>   - 用日语部分请求 TTS 服务，得到合成的语音。
+>   - 播放语音，同时根据情感标签驱动角色动作，显示中文字幕（自动换行处理）。
+> - 若响应不符合格式要求，跳过 TTS，仅显示字幕并以思考动作（Think）作为回退。
 
-## 安全与隐私
-- 聊天内容会发送到你配置的聊天 API（如 OpenRouter/OpenAI）；请注意 API Key 与隐私策略。
-- TTS 请求默认向本地 GPT-SoVITS 服务发起（不上传语音到第三方），更安全且延迟低。
-
-## 示例 Persona（默认已内置）
-插件内置了一个示例 SystemPrompt（见 [AIChat/AIMod.cs 的 DefaultPersona](https://github.com/qzrs777/AIChat/blob/57f8352377798334b44c5c3a3c8298ae2381b0dc/AIChat/AIMod.cs#L85-L110)），示范如何强制 AI 始终以日语语音输出，并给出格式约束（请在设置中编辑以适配你的角色）。
-
-## 实验功能
 ### 其他语言的语音输出
 注：
 - 由于原语音样本为日语，其他语音输出的效果可能不太好。
@@ -204,9 +194,26 @@ UI 其他
 - 展开高级设置，将 `合成语音语言（text_lang）` 改为 `zh`，并勾选`跳过日语检测（强制调用 TTS）`。
 - 保存配置。
 
+## 调试与常见问题
+- 没有声音
+  - 确认已下载并正确配置本地 VITS 模型（EPIT、model 名称等）。
+  - 检查 SoVITS_URL 是否正确并能从浏览器/工具访问（如 `http://127.0.0.1:9880/tts`）。
+  - 确认 RefAudioPath 指向存在的 .wav 文件。
+- 插件没有生效 / 找不到 plugins 文件夹
+  - 运行一次游戏以生成必要的目录结构；然后将 DLL 放入 `plugins`。
+- AI 返回中文但被 TTS 读出发音异常
+  - 插件会检测是否含日文假名；若无假名则不会调用 TTS（仅显示字幕）。若你确实想让中文也生成语音，请确保 TTS 支持中文并在插件中调整 TargetLang。
+- TTS 报错或返回空音频
+  - 检查 GPT-SoVITS 日志。
+  - Mod 日志（游戏目录下的 `BepInEx` 中的 `LogOutput.log`）会打印 TTS 错误和响应文本，作为排查依据，尤其注意请求发送的 JSON 数据（插件在请求体中会传入 `text`、`text_lang`、`ref_audio_path`、`prompt_text`、`prompt_lang`）。
+
+## 安全与隐私
+- 聊天内容会发送到你配置的聊天 API（如 OpenRouter/OpenAI）；请注意 API Key 与隐私策略。
+- TTS 请求默认向本地 GPT-SoVITS 服务发起（不上传语音到第三方），更安全且延迟低。
+
 ## 构建
 本 Mod 的核心 `AIChat.dll` 可从仓库构建。首先要克隆仓库到本地，然后：
-- 在 Windows 下可使用 Visual Studio 构建（方法略）；
+- 在 Windows 下可使用 Visual Studio 构建（方法暂略）；
 - 在 Linux 下可使用 `make` 构建。
   - 安装依赖：
     - `make`
@@ -216,3 +223,4 @@ UI 其他
     ```bash
     git ls-files --others --ignored --exclude-standard
     ```
+- 在线构建：本项目由 GitHub Action 每日自动构建（也可由维护者手动触发），见 [Release Preview Build](https://github.com/qzrs777/AIChat/releases/tag/latest)。[![Build Status](https://github.com/qzrs777/AIChat/actions/workflows/build.yml/badge.svg)](https://github.com/qzrs777/AIChat/actions/workflows/build.yml)

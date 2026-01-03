@@ -50,6 +50,7 @@ jobs:
           tag_name: latest
           name: "Preview Build"
           body: |
+            [![Build Status](https://github.com/qzrs777/AIChat/actions/workflows/build.yml/badge.svg)](https://github.com/qzrs777/AIChat/actions/workflows/build.yml)
             此为无固定版本号的预览版本，每日自动构建，也可由维护者手动触发。
 
             此构建的 Commit 信息：
