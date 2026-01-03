@@ -25,9 +25,9 @@ namespace AIChat.Services
             Action<AudioClip> onComplete, 
             int maxRetries = 3, 
             float timeoutSeconds = 30f,
-            bool skipAudioPathCheck = false)
+            bool audioPathCheck = false)
         {
-            if (!skipAudioPathCheck && !File.Exists(refPath))
+            if (audioPathCheck && !File.Exists(refPath))
             {
                 string defaultPath = Path.Combine(BepInEx.Paths.PluginPath, "ChillAIMod", "Voice.wav");
                 if (File.Exists(defaultPath)) refPath = defaultPath;

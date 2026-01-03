@@ -35,7 +35,7 @@ namespace ChillAIMod
         private ConfigEntry<string> _TTSServicePathConfig;
         private ConfigEntry<bool> _LaunchTTSServiceConfig;
         private ConfigEntry<bool> _quitTTSServiceOnQuitConfig;
-        private ConfigEntry<bool> _skipAudioPathCheckConfig;
+        private ConfigEntry<bool> _audioPathCheckConfig;
 
         // --- 新增窗口大小配置 ---
         private ConfigEntry<float> _windowWidthConfig;
@@ -126,11 +126,11 @@ namespace ChillAIMod
             _modelConfig = Config.Bind("1. General", "ModelName", "openai/gpt-3.5-turbo", "LLM Model Name");
 
             _sovitsUrlConfig = Config.Bind("2. Audio", "SoVITS_URL", "http://127.0.0.1:9880", "GPT-SoVITS API URL");
-            _refAudioPathConfig = Config.Bind("2. Audio", "RefAudioPath", @"D:\Voice_MainScenario_27_016.wav", "Ref Audio Path");
+            _refAudioPathConfig = Config.Bind("2. Audio", "RefAudioPath", @"Voice_MainScenario_27_016.wav", "Ref Audio Path");
             _TTSServicePathConfig = Config.Bind("2. Audio", "TTS_Service_Path", @"D:\GPT-SoVITS\GPT-SoVITS-v2pro-20250604-nvidia50\run_api.bat", "TTS Service Path");
             _LaunchTTSServiceConfig = Config.Bind("2. Audio", "LaunchTTSService", true, "是否在游戏启动时自动启动 TTS 服务");
             _quitTTSServiceOnQuitConfig = Config.Bind("2. Audio", "QuitTTSServiceOnQuit", true, "是否在游戏退出时自动关闭 TTS 服务");
-            _skipAudioPathCheckConfig = Config.Bind("2. Audio", "SkipAudioPathCheck", false, "不检测音频文件路径（用 docker 部署 TTS 时请勾选）");
+            _audioPathCheckConfig = Config.Bind("2. Audio", "AudioPathCheck", false, "从 Mod 侧检测音频文件路径");
             _promptTextConfig = Config.Bind("2. Audio", "PromptText", "君が集中した時のシータ波を検出して、リンクをつなぎ直せば元通りになるはず。", "Ref Audio Text");
             _promptLangConfig = Config.Bind("2. Audio", "PromptLang", "ja", "Ref Lang");
             _targetLangConfig = Config.Bind("2. Audio", "TargetLang", "ja", "Target Lang");
@@ -395,7 +395,7 @@ namespace ChillAIMod
                 GUILayout.Space(5);
                 _LaunchTTSServiceConfig.Value = GUILayout.Toggle(_LaunchTTSServiceConfig.Value, "启动时自动运行 TTS 服务", GUILayout.Height(elementHeight));
                 _quitTTSServiceOnQuitConfig.Value = GUILayout.Toggle(_quitTTSServiceOnQuitConfig.Value, "退出时自动关闭 TTS 服务", GUILayout.Height(elementHeight));
-                _skipAudioPathCheckConfig.Value = GUILayout.Toggle(_skipAudioPathCheckConfig.Value, "不检测音频文件路径", GUILayout.Height(elementHeight));
+                _audioPathCheckConfig.Value = GUILayout.Toggle(_audioPathCheckConfig.Value, "从 Mod 侧检测音频文件路径", GUILayout.Height(elementHeight));
                 GUILayout.EndVertical(); // <--- 必须结束！
 
                 GUILayout.Space(5);
@@ -791,7 +791,7 @@ namespace ChillAIMod
                         (clip) => downloadedClip = clip,
                         3,
                         30f,
-                        _skipAudioPathCheckConfig.Value));
+                        _audioPathCheckConfig.Value));
 
                     if (downloadedClip != null)
                     {
