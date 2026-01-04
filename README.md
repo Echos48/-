@@ -227,3 +227,17 @@
   - 检查 Mod 日志。
   - 若 AI 返回的内容不符合格式要求，请确保使用合适的 Persona，或尝试更换 AI 模型。
   - 注：插件默认会检测语音文本是否含日文假名，若无假名则不会调用 TTS，而仅显示字幕文本。
+
+## 致谢与许可
+
+本项目使用了以下开源项目：
+- [BepInEx](https://github.com/BepInEx/BepInEx)：Unity/XNA 游戏 Mod 框架
+  - 许可：LGPL-2.1
+- [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS)：用于语音合成
+  - 许可：MIT
+
+本项目在构建时还用到以下项目：
+- Unity Engine：游戏引擎库（仅用于构建环境）
+  - 仓库内含开源的 `UnityEngine.UI.dll`（许可：Unity Companion License），除此以外的其他文件由于闭源而未包含。
+
+本项目是 MIT 许可的自由开源软件。详见 [LICENSE](LICENSE) 文件。

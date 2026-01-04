@@ -2,10 +2,24 @@
 
 ===
 
-先把 BepInEx_win_x64_5.4.23.4 中的文件拖进游戏根目录里，
-然后运行一次游戏，生成目录结构。
+【安装说明】
 
-把 AIChat.dll 放入 BepInEx/plugins，进游戏按 F9 设置 API Key 等。
+安装步骤：
+
+1. 将压缩包内的 BepInEx_win_x64_5.4.23.4 下的所有文件解压到游戏根目录
+   （包括 BepInEx 文件夹、winhttp.dll、doorstop_config.ini 等）
+
+2. 运行一次游戏，生成必要的目录结构
+
+3. 把 AIChat.dll 放入 BepInEx/plugins，进游戏按 F9 设置 API Key 等
+
+注意：Linux 用户需要在 Steam 的游戏设置里，将启动选项填写为：
+WINEDLLOVERRIDES="winhttp=n,b" %command%
+
+===
+
+语音配置（可选）：
+
 同时也要开启 GPT-SoVITS 的 WebAPI v2（api_v2.py）。
 对于 Windows 用户，如果 GPT-SoVITS 根目录下没有 bat 脚本，
 可以创建一个 txt，把以下代码粘贴进去，然后后缀改成.bat运行

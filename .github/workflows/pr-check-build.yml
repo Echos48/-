@@ -19,12 +19,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mono-complete
 
+      - name: Download Unity assemblies from NuGet
+        run: |
+          cd build-resource/buildenv
+          bash download-unityengine.sh
+      - name: Download BepInEx
+        run: |
+          cd build-resource/buildenv
+          bash download-bepinex.sh
+
       - name: Build AIChat.dll
         run: |
           make GAME_ROOT="${{ github.workspace }}/build-resource/buildenv/mokgamedir"
-
-      - name: Copy AIChat.dll to assets
-        run: |
           cp AIChat/bin/Release/AIChat.dll build-resource/assets/
 
       - name: Upload PR Build Artifact
