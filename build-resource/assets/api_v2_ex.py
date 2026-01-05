@@ -68,7 +68,7 @@ try:
     )
     print(f"Whisper ({asr_model_size}) 加载完成")
 except Exception as e:
-    print(f"ASR 模型加载失败 (可能显存不足或缺少库): {e}")
+    print(f"ASR 模型加载失败 (可能显存不足或缺少库，或者联网失败): {e}")
     print("ASR 功能将不可用，但 TTS 仍可正常工作。")
     asr_model = None
 
