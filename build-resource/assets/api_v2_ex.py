@@ -55,7 +55,7 @@ tts_config = TTS_Config(config_path)
 print(tts_config)
 tts_pipeline = TTS(tts_config)
 
-print("正在加载 Whisper ASR 模型...")
+print("正在加载 Faster Whisper ASR 模型...")
 ### 可选tiny, base, small, medium, large-v3-turbo等等, tiny (VRAM<0.5GB) base small VRAM 0.5-0.8左右
 asr_model_size = "small"
 try:
@@ -66,10 +66,10 @@ try:
         device="cuda", 
         compute_type="int8_float16"
     )
-    print(f"Whisper ({asr_model_size}) 加载完成")
+    print(f"ASR 模型 ({asr_model_size}) 加载完成")
 except Exception as e:
     print(f"ASR 模型加载失败 (可能显存不足或缺少库，或者联网失败): {e}")
-    print("ASR 功能将不可用，但 TTS 仍可正常工作。")
+    print("语音识别功能将不可用，但 TTS 仍可正常工作。")
     asr_model = None
 
 APP = FastAPI()

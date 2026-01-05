@@ -5,7 +5,7 @@
 ## 特色
 - 使用任意兼容的聊天 API（如 OpenRouter/OpenAI/Ollama）生成对话文本。
 - 支持使用本地部署的 GPT-SoVITS WebAPIv2 生成语音（不上传语音到第三方），无需将 TTS Key 传到云端，更安全且延迟低。
-- 支持语音输入（由 Whisper ASR 模型实现语音识别）。
+- 支持语音输入（由 Faster Whisper ASR 模型实现语音识别）。
 - UI 内可调节音量、窗口尺寸、保存配置，支持拖拽调整大小与精确数值输入。
 - 要求 AI 输出严格格式：`[Emotion] ||| JAPANESE TEXT ||| CHINESE TRANSLATION`，插件根据情感切换动作并播放日语语音，显示中文字幕。若 AI 未按格式返回，只显示字幕并以思考动作代替语音（避免错误语句被 TTS 读出）。
 
@@ -94,7 +94,7 @@
 4. 配置语音识别（可选）
    - 前面我们已经将 `api_v2_ex.py` 复制到 GPT-SoVITS 根目录下，但为了稳定起见，之前启动的是 `api_v2.py`，它是不支持语音识别的。
    - 现在，将前面启动 WebAPI v2 的有关代码中的 `api_v2.py` 改为 `api_v2_ex.py`，再重新启动 WebAPI v2 服务。
-     > 相比原版 `api_v2.py`，`api_v2_ex.py` 通过 Whisper ASR 模型实现了语音识别。
+     > 相比原版 `api_v2.py`，`api_v2_ex.py` 通过 Faster Whisper ASR 模型实现了语音识别。
 
    - 确保电脑连接的麦克风能正常运行（可以[在网上搜索 `麦克风在线测试`](https://www.bing.com/search?q=%E9%BA%A6%E5%85%8B%E9%A3%8E%E5%9C%A8%E7%BA%BF%E6%B5%8B%E8%AF%95)）。
    - 测试使用：在游戏中的 Mod 界面，左键按住 `按住说话` 按钮，对着麦克风说话，然后松开。等待片刻，角色将以语音回复。
