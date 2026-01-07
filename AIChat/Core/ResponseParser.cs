@@ -1,4 +1,4 @@
-﻿using BepInEx.Logging;
+﻿using AIChat.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +15,7 @@ namespace AIChat.Core
             return s?.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", "\\n") ?? "";
         }
 
-        public static string ExtractContentFromOllama(string jsonResponse , ManualLogSource logger)
+        public static string ExtractContentFromOllama(string jsonResponse)
         {
             try
             {
@@ -28,7 +28,7 @@ namespace AIChat.Core
             }
             catch (Exception ex)
             {
-                logger.LogError($"[Ollama] 解析失败: {ex.Message}");
+                Log.Error($"[Ollama] 解析失败: {ex.Message}");
                 return null;
             }
         }

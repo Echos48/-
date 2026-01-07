@@ -14,6 +14,17 @@
     <ProjectGuid>{2E59843C-DE00-4628-A540-43F2449EA8B7}</ProjectGuid>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(Configuration)' == 'Console' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Console\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;CONSOLE_PROGRAME</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -32,6 +43,14 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+
+  <ItemGroup Condition=" '$(Configuration)' == 'Console' ">
+    <Compile Remove="$(MSBuildProjectDirectory)\AIMod.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(Configuration)' != 'Console' ">
+    <Compile Remove="$(MSBuildProjectDirectory)\AIConsole.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="0Harmony">
