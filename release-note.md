@@ -11,14 +11,5 @@
 注意：
 - tag 会自动创建，不需要在本地打 git tag。
 - 若有相同 tag 的 Release，原 Release 将被删除。
+- BepInEx 对插件版本号有格式要求，所以 V1.0.0 这种是不可以的，将会无法加载。
 -->
-插件更新：
-- 在线构建时，自动将版本号写入插件（by @clsty ）
-- 在插件 UI 开头显示版本号（by @clsty ）
-
-基础设施更新：
-- 更新构建流程，统一使用 dotnet（by @GarfieldGod @clsty ）
-- 更新 UnityEngine、BepInEx 相关文件下载流程，统一使用 python 脚本（by @GarfieldGod @clsty ）
-- 添加 Windows 下的构建流程说明（by @GarfieldGod ）
-- 预览版 tag 自动重置，实现置顶效果（by @clsty ）
-- 添加稳定版 Release 的 workflow（by @clsty ）
