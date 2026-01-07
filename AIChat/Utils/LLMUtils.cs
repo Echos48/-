@@ -54,8 +54,52 @@ namespace AIChat.Utils
         }
     }
 
+    public struct LLMStandardResponse
+    {
+        public bool Success;
+        public string EmotionTag;  // 动作标签，如 [Happy], [Think] 等
+        public string VoiceText;   // 用于 TTS 的文本
+        public string SubtitleText;// 用于字幕显示的文本
+
+        public LLMStandardResponse(bool success, string emotionTag, string voiceText, string subtitleText)
+        {
+            Success = success;
+            EmotionTag = emotionTag;
+            VoiceText = voiceText;
+            SubtitleText = subtitleText;
+        }
+    }
+
     public static class LLMUtils
     {
+        public static LLMStandardResponse ParseStandardResponse(string response)
+        {
+            LLMStandardResponse ret = new LLMStandardResponse(false, "Think", "", response);
+            // 按 ||| 分割（注意：有些模型可能会用单个 | ）
+            string[] parts = response.Split(new string[] { "|||" }, StringSplitOptions.None);
+
+            // 如果不是 |||，尝试单个 |
+            if (parts.Length < 3)
+            {
+                parts = response.Split(new string[] { "|" }, StringSplitOptions.None);
+            }
+
+            // 【核心修改：严格的格式检查】
+            if (parts.Length >= 3)
+            {
+                // 格式正确：[动作] ||| 日语 ||| 中文
+                ret.EmotionTag = parts[0].Trim().Replace("[", "").Replace("]", "");
+                ret.VoiceText = parts[1].Trim();
+                ret.SubtitleText = parts[2].Trim();
+
+                ret.Success = true;
+            }
+
+            if (!ret.Success) Log.Warning($"[格式错误] AI 回复不符合格式: {response}");
+
+            return ret;
+        }
+
         public static string BuildRequestBody(LLMRequestContext requestContext)
         {
             // 【集成分层记忆】获取带记忆上下文的提示词
@@ -74,12 +118,12 @@ namespace AIChat.Utils
                 // Gemini 或 Ollama (如果是 Llama3 等) 通常支持 system role
                 jsonBody = $@"{{ ""model"": ""{requestContext.ModelName}"", ""messages"": [ {{ ""role"": ""system"", ""content"": ""{ResponseParser.EscapeJson(requestContext.SystemPrompt)}"" }}, {{ ""role"": ""user"", ""content"": ""{ResponseParser.EscapeJson(userPromptWithMemory)}"" }} ]{extraJson} }}";
             }
-            
+
+            Log.Info($"[记忆系统] 启用状态: {requestContext.HierarchicalMemory != null}");
             // 【日志】打印完整的请求体（如果启用）
             if (requestContext.LogApiRequestBody)
             {
                 // 【调试日志】显示完整的请求内容
-                Log.Info($"[记忆系统] 启用状态: {requestContext.HierarchicalMemory != null}");
                 Log.Info($"[发送给LLM的完整内容]\n========================================\n[System Prompt]\n{requestContext.SystemPrompt}\n\n[User Content]\n{userPromptWithMemory}\n========================================");
                 Log.Info($"[API请求] 完整请求体:\n{jsonBody}");
             }

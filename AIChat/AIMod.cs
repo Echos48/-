@@ -846,49 +846,12 @@ namespace ChillAIMod
             // 4. 处理回复并下载语音
             if (!string.IsNullOrEmpty(fullResponse))
             {
-                string emotionTag = "Normal";
-                string voiceText = "";     // 日语
-                string subtitleText = "";  // 中文
-
-                // 按 ||| 分割（注意：有些模型可能会用单个 | ）
-                string[] parts = fullResponse.Split(new string[] { "|||" }, StringSplitOptions.None);
-
-                // 如果不是 |||，尝试单个 |
-                if (parts.Length < 3)
-                {
-                    parts = fullResponse.Split(new string[] { "|" }, StringSplitOptions.None);
-                }
-
-                // 【核心修改：严格的格式检查】
-                if (parts.Length >= 3)
-                {
-                    // 格式正确：[动作] ||| 日语 ||| 中文
-                    emotionTag = parts[0].Trim().Replace("[", "").Replace("]", "");
-                    voiceText = parts[1].Trim();
-                    subtitleText = parts[2].Trim();
-
-                    Log.Info($"Parse Response With\n\temotionTag: {emotionTag}\n\tvoiceText: {voiceText}\n\tsubtitleText: {subtitleText}");
-                    
-                    // 【集成分层记忆】存储日语原文（voiceText）而非中文翻译
-                    AddToMemorySystem("User", prompt);
-                    AddToMemorySystem("AI", $"[{emotionTag}] {voiceText}");
-                }
-                else
-                {
-                    // 格式错误（AI 没按规矩来，比如只回了一句话）
-                    // 这种情况下，通常 AI 回复的是纯中文。
-                    // 绝对不能把这个中文发给 TTS，否则会读出奇怪的声音！
-                    Log.Warning($"[格式错误] AI 回复不符合格式: {fullResponse}");
-
-                    // 补救措施：不播放语音，只显示字幕，动作设为思考
-                    emotionTag = "Think";
-                    voiceText = ""; // 空字符串，不给 TTS
-                    subtitleText = fullResponse; // 把整个回复当字幕
-                    
-                    // 【集成分层记忆】即使格式错误也要存储
-                    AddToMemorySystem("User", prompt);
-                    AddToMemorySystem("AI", $"[格式错误] {fullResponse}");
-                }
+                LLMStandardResponse parsedResponse = LLMUtils.ParseStandardResponse(fullResponse);
+                string emotionTag = parsedResponse.EmotionTag;
+                string voiceText = parsedResponse.VoiceText;
+                string subtitleText = parsedResponse.SubtitleText;
+                AddToMemorySystem("User", prompt);
+                AddToMemorySystem("AI", parsedResponse.Success ? $"[{emotionTag}] {voiceText}" : $"[格式错误] {fullResponse}");
 
                 // 【应用换行】 在将字幕文本显示到 UI 之前，强制插入换行符
                 subtitleText = ResponseParser.InsertLineBreaks(subtitleText, 25);

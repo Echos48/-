@@ -8,6 +8,8 @@ namespace AIChat.Utils {
     public interface Logger
     {
         void LogInfo(string message);
+        void LogDebug(string message);
+        void LogMessage(string message);
         void LogWarning(string message);
         void LogError(string message);
     }
@@ -37,6 +39,8 @@ namespace AIChat.Utils {
             }
 
             public void LogInfo(string message) => _logSource.LogInfo(message);
+            public void LogDebug(string message) => _logSource.LogDebug(message);
+            public void LogMessage(string message) => _logSource.LogMessage(message);
             public void LogWarning(string message) => _logSource.LogWarning(message);
             public void LogError(string message) => _logSource.LogError(message);
         }
@@ -51,21 +55,35 @@ namespace AIChat.Utils {
             public void LogInfo(string message)
             {
                 Console.ForegroundColor = System.ConsoleColor.Cyan;
-                Console.WriteLine($"[AIChat] [INFO] {DateTime.Now:HH:mm:ss} {message}");
+                Console.WriteLine($"[INFO] {DateTime.Now:HH:mm:ss} {message}");
+                Console.ResetColor();
+            }
+
+            public void LogDebug(string message)
+            {
+                Console.ForegroundColor = System.ConsoleColor.Gray;
+                Console.WriteLine($"[DEBUG] {DateTime.Now:HH:mm:ss} {message}");
+                Console.ResetColor();
+            }
+
+            public void LogMessage(string message)
+            {
+                Console.ForegroundColor = System.ConsoleColor.Green;
+                Console.WriteLine($"[Message] {DateTime.Now:HH:mm:ss} {message}");
                 Console.ResetColor();
             }
 
             public void LogWarning(string message)
             {
                 Console.ForegroundColor = System.ConsoleColor.Yellow;
-                Console.WriteLine($"[AIChat] [WARNING] {DateTime.Now:HH:mm:ss} {message}");
+                Console.WriteLine($"[WARNING] {DateTime.Now:HH:mm:ss} {message}");
                 Console.ResetColor();
             }
 
             public void LogError(string message)
             {
                 Console.ForegroundColor = System.ConsoleColor.Red;
-                Console.WriteLine($"[AIChat] [ERROR] {DateTime.Now:HH:mm:ss} {message}");
+                Console.WriteLine($"[ERROR] {DateTime.Now:HH:mm:ss} {message}");
                 Console.ResetColor();
             }
         }
@@ -87,6 +105,18 @@ namespace AIChat.Utils {
         {
             EnsureInstanceInitialized();
             _instance.LogError(message);
+        }
+
+        public static void Debug(string message)
+        {
+            EnsureInstanceInitialized();
+            _instance.LogDebug(message);
+        }
+
+        public static void Message(string message)
+        {
+            EnsureInstanceInitialized();
+            _instance.LogMessage(message);
         }
 
         private static void EnsureInstanceInitialized()
