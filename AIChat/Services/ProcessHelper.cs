@@ -4,21 +4,20 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using BepInEx;
-using BepInEx.Logging;
+using AIChatMod.Utils;
 
 namespace AIChat.Services
 {
     public static class ProcessHelper
     {
-        public static void KillProcessTree(Process process ,ManualLogSource logger)
+        public static void KillProcessTree(Process process)
         {
             if (process == null || process.HasExited) return;
 
             try
             {
                 int pid = process.Id;
-                logger.LogInfo($"[TTS Cleanup] 使用 taskkill 终止进程树 (PID: {pid})");
+                Log.Info($"[TTS Cleanup] 使用 taskkill 终止进程树 (PID: {pid})");
 
                 // 在新进程中执行 taskkill /T /F /PID <pid>
                 ProcessStartInfo psi = new ProcessStartInfo
@@ -35,11 +34,11 @@ namespace AIChat.Services
                     killer.WaitForExit(3000); // 等待最多 3 秒
                 }
 
-                logger.LogInfo($"[TTS Cleanup] taskkill 执行完毕 (PID: {pid})");
+                Log.Info($"[TTS Cleanup] taskkill 执行完毕 (PID: {pid})");
             }
             catch (Exception ex)
             {
-                logger.LogWarning($"[TTS Cleanup] taskkill 失败: {ex.Message}");
+                Log.Warning($"[TTS Cleanup] taskkill 失败: {ex.Message}");
             }
         }
     }

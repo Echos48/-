@@ -1,4 +1,4 @@
-﻿using BepInEx.Logging;
+﻿using AIChatMod.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,7 +19,7 @@ namespace AIChat.Unity
         public static MethodInfo _lookInitMethod;
         public static MethodInfo _lookAtMethod;
 
-        public static void FindHeroineService(ManualLogSource logger)
+        public static void FindHeroineService()
         {
             var allComponents = UnityEngine.Object.FindObjectsOfType<MonoBehaviour>();
             foreach (var comp in allComponents)
@@ -33,16 +33,16 @@ namespace AIChat.Unity
                     _lookInitMethod = comp.GetType().GetMethod("LookInitSlowly", BindingFlags.Public | BindingFlags.Instance);
                     _lookAtMethod = comp.GetType().GetMethod("ChangeLookScaleAnimation", BindingFlags.Public | BindingFlags.Instance);
 
-                    if (_changeAnimSmoothMethod != null) logger.LogWarning($"✅ 核心连接成功: {comp.gameObject.name}");
+                    if (_changeAnimSmoothMethod != null) Log.Warning($"✅ 核心连接成功: {comp.gameObject.name}");
                     return;
                 }
             }
         }
         // --- 辅助方法 ---
-        public static void CallNativeChangeAnim(int id , ManualLogSource logger)
+        public static void CallNativeChangeAnim(int id)
         {
             try { _changeAnimSmoothMethod.Invoke(_heroineService, new object[] { id }); }
-            catch (Exception ex) { logger.LogError($"Anim Error: {ex.Message}"); }
+            catch (Exception ex) { Log.Error($"Anim Error: {ex.Message}"); }
         }
 
         public static void ControlLookAt(float scale, float speed)

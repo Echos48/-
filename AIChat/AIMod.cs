@@ -15,11 +15,10 @@ using AIChat.Core;
 using AIChat.Services;
 using AIChat.Unity;
 using System.Collections.Generic;
+using AIChatMod.Utils;
 
 namespace ChillAIMod
 {
-    public enum ThinkMode { Default, Enable, Disable }
-
     [BepInPlugin("com.username.chillaimod", "Chill AI Mod", AIChat.Version.VersionString)]
     public class AIMod : BaseUnityPlugin
     {
@@ -132,6 +131,7 @@ namespace ChillAIMod
         private Vector2 _personaScrollPosition = Vector2.zero;
         void Awake()
         {
+            Log.Init(this.Logger);
             DontDestroyOnLoad(this.gameObject);
             this.gameObject.hideFlags = HideFlags.HideAndDontSave;
             _audioSource = this.gameObject.AddComponent<AudioSource>();
@@ -214,11 +214,11 @@ namespace ChillAIMod
                         WorkingDirectory = Path.GetDirectoryName(cleanPath)
                     };
                     _launchedTTSProcess = Process.Start(startInfo);
-                    Logger.LogInfo("已启动 TTS 服务");
+                    Log.Info("已启动 TTS 服务");
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError($"启动 TTS 服务失败: {ex.Message}");
+                    Log.Error($"启动 TTS 服务失败: {ex.Message}");
                 }
             }
             // 启动后台 TTS 健康检测
@@ -231,16 +231,16 @@ namespace ChillAIMod
             if (_experimentalMemoryConfig.Value)
             {
                 InitializeHierarchicalMemory();
-                Logger.LogInfo(">>> 实验性分层记忆系统已启用 <<<");
+                Log.Info(">>> 实验性分层记忆系统已启用 <<<");
             }
 
-            Logger.LogInfo($">>> AIMod V{AIChat.Version.VersionString}  已加载 <<<");
+            Log.Info($">>> AIMod V{AIChat.Version.VersionString}  已加载 <<<");
         }
 
         void Update()
         {
             // 自动连接游戏核心
-            if (GameBridge._heroineService == null && Time.frameCount % 100 == 0) GameBridge.FindHeroineService(Logger);
+            if (GameBridge._heroineService == null && Time.frameCount % 100 == 0) GameBridge.FindHeroineService();
 
             // 口型同步逻辑
             if (_isAISpeaking && GameBridge._cachedAnimator != null && _audioSource != null)
@@ -595,7 +595,7 @@ namespace ChillAIMod
                     if (GUILayout.Button("🗑️ 清除所有记忆", GUILayout.Width(btnWidth*3)))
                     {
                         _hierarchicalMemory?.ClearAllMemory();
-                        Logger.LogInfo("记忆已清空");
+                        Log.Info("记忆已清空");
                     }
                     GUILayout.EndHorizontal();
                     GUILayout.Space(5);
@@ -614,7 +614,7 @@ namespace ChillAIMod
                 if (GUILayout.Button("💾 保存所有配置", GUILayout.Height(elementHeight * 1.5f)))
                 {
                     Config.Save();
-                    Logger.LogInfo("配置已保存！");
+                    Log.Info("配置已保存！");
                 }
                 GUILayout.Space(10);
             }
@@ -794,8 +794,8 @@ namespace ChillAIMod
             string promptWithMemory = GetContextWithMemory(prompt);
             
             // 【调试日志】显示完整的请求内容
-            Logger.LogInfo($"[记忆系统] 启用状态: {_experimentalMemoryConfig.Value}");
-            Logger.LogInfo($"[发送给LLM的完整内容]\n========================================\n[System Prompt]\n{persona}\n\n[User Content + Memory]\n{promptWithMemory}\n========================================");
+            Log.Info($"[记忆系统] 启用状态: {_experimentalMemoryConfig.Value}");
+            Log.Info($"[发送给LLM的完整内容]\n========================================\n[System Prompt]\n{persona}\n\n[User Content + Memory]\n{promptWithMemory}\n========================================");
             
             string jsonBody = "";
             string extraJson = _useOllama.Value ? $@",""stream"": false" : "";
@@ -816,7 +816,7 @@ namespace ChillAIMod
             // 【日志】打印完整的请求体（如果启用）
             if (_logApiRequestBodyConfig.Value)
             {
-                Logger.LogInfo($"[API请求] 完整请求体:\n{jsonBody}");
+                Log.Info($"[API请求] 完整请求体:\n{jsonBody}");
             }
             
             string fullResponse = "";
@@ -837,11 +837,11 @@ namespace ChillAIMod
 
                 if (request.result == UnityWebRequest.Result.Success)
                 {
-                    Logger.LogInfo($"获取的完整回复：\n\t{request.downloadHandler.text}");
+                    Log.Info($"获取的完整回复：\n\t{request.downloadHandler.text}");
                     if (_useOllama.Value)
                     {
-                        fullResponse = ResponseParser.ExtractContentFromOllama(request.downloadHandler.text , Logger);
-                        Logger.LogInfo($"ExtractContentFromOllama: \n\t{fullResponse}");
+                        fullResponse = ResponseParser.ExtractContentFromOllama(request.downloadHandler.text);
+                        Log.Info($"ExtractContentFromOllama: \n\t{fullResponse}");
                     }
                     else
                     {
@@ -892,7 +892,7 @@ namespace ChillAIMod
                     voiceText = parts[1].Trim();
                     subtitleText = parts[2].Trim();
 
-                    Logger.LogInfo($"Parse Response With\n\temotionTag: {emotionTag}\n\tvoiceText: {voiceText}\n\tsubtitleText: {subtitleText}");
+                    Log.Info($"Parse Response With\n\temotionTag: {emotionTag}\n\tvoiceText: {voiceText}\n\tsubtitleText: {subtitleText}");
                     
                     // 【集成分层记忆】存储日语原文（voiceText）而非中文翻译
                     AddToMemorySystem("User", prompt);
@@ -903,7 +903,7 @@ namespace ChillAIMod
                     // 格式错误（AI 没按规矩来，比如只回了一句话）
                     // 这种情况下，通常 AI 回复的是纯中文。
                     // 绝对不能把这个中文发给 TTS，否则会读出奇怪的声音！
-                    Logger.LogWarning($"[格式错误] AI 回复不符合格式: {fullResponse}");
+                    Log.Warning($"[格式错误] AI 回复不符合格式: {fullResponse}");
 
                     // 补救措施：不播放语音，只显示字幕，动作设为思考
                     emotionTag = "Think";
@@ -922,7 +922,7 @@ namespace ChillAIMod
                 // 简单的日语检测：看是否包含假名 (Hiragana/Katakana)
                 // 这是一个可选的保险措施
                 bool isJapanese = _japaneseCheckConfig.Value ? Regex.IsMatch(voiceText, @"[\u3040-\u309F\u30A0-\u30FF]") : true ;
-                Logger.LogInfo($"isJapanese: {isJapanese} (japaneseCheck: {_japaneseCheckConfig.Value})");
+                Log.Info($"isJapanese: {isJapanese} (japaneseCheck: {_japaneseCheckConfig.Value})");
 
                 if (!string.IsNullOrEmpty(voiceText) && isJapanese)
                 {
@@ -966,7 +966,7 @@ namespace ChillAIMod
                     // 【静音模式】
                     // 如果格式错了，或者不是日语，我们就只显示字幕、做动作，不发声音
                     // 这样比听到 AI 用奇怪的调子读中文要好得多
-                    Logger.LogWarning("跳过 TTS：文本为空或非日语");
+                    Log.Warning("跳过 TTS：文本为空或非日语");
 
                     myText.text = subtitleText;
                     myText.color = Color.white;
@@ -997,25 +997,25 @@ namespace ChillAIMod
         {
             if (GameBridge._heroineService == null || GameBridge._changeAnimSmoothMethod == null) yield break;
 
-            Logger.LogInfo($"[动画] 执行: {emotion}");
+            Log.Info($"[动画] 执行: {emotion}");
             float clipDuration = (voiceClip != null) ? voiceClip.length : 3.0f;
             // 1. 归位 (除了喝茶)
             if (emotion != "Drink")
             {
-                GameBridge.CallNativeChangeAnim(250, Logger);
+                GameBridge.CallNativeChangeAnim(250);
                 yield return new WaitForSecondsRealtime(0.2f);
             }
             if (voiceClip != null)
             {
                 // 2. 播放语音 + 动作
-                Logger.LogInfo($">>> 语音({voiceClip.length:F1}s) + 动作");
+                Log.Info($">>> 语音({voiceClip.length:F1}s) + 动作");
                 _isAISpeaking = true;
                 _audioSource.clip = voiceClip;
                 _audioSource.Play();
             }
             else
             {
-                Logger.LogInfo($">>> 无语音模式 (格式错误或TTS失败) + 动作");
+                Log.Info($">>> 无语音模式 (格式错误或TTS失败) + 动作");
                 // 没声音就不播了，只做动作
             }
             int animID = 1001;
@@ -1029,7 +1029,7 @@ namespace ChillAIMod
                 case "Agree": animID = 1301; break;
 
                 case "Drink":
-                    GameBridge.CallNativeChangeAnim(250 , Logger);
+                    GameBridge.CallNativeChangeAnim(250);
                     yield return new WaitForSecondsRealtime(0.5f);
                     animID = 256; // DrinkTea
                     break;
@@ -1040,7 +1040,7 @@ namespace ChillAIMod
 
                 case "Wave":
                     animID = 5001;
-                    GameBridge.CallNativeChangeAnim(animID , Logger);
+                    GameBridge.CallNativeChangeAnim(animID);
 
                     // 等待抬手
                     yield return new WaitForSecondsRealtime(0.3f);
@@ -1052,7 +1052,7 @@ namespace ChillAIMod
                     yield return new WaitForSecondsRealtime(waitTime);
 
                     // 归位
-                    GameBridge.CallNativeChangeAnim(250 , Logger);
+                    GameBridge.CallNativeChangeAnim(250);
                     GameBridge.RestoreLookAt();
 
                     _isAISpeaking = false;
@@ -1060,7 +1060,7 @@ namespace ChillAIMod
             }
 
             // 执行通用动作
-            GameBridge.CallNativeChangeAnim(animID , Logger);
+            GameBridge.CallNativeChangeAnim(animID);
 
             // 等待语音播完，增加0.5秒缓冲，以防止过早判断AI动作结束
             yield return new WaitForSecondsRealtime(clipDuration + 0.5f);
@@ -1068,7 +1068,7 @@ namespace ChillAIMod
             // 恢复
             if (_audioSource != null && _audioSource.isPlaying) {
                 // 即使等待时间到了，语音还在播放，就强制停止进行兜底
-                Logger.LogWarning("等待结束，强制停止语音播放");
+                Log.Warning("等待结束，强制停止语音播放");
                 _audioSource.Stop();
             }
             GameBridge.RestoreLookAt();
@@ -1078,19 +1078,19 @@ namespace ChillAIMod
         // ================= 【新增录音控制】 =================
         void StartRecording()
         {
-            Logger.LogInfo($"[Mic Debug] 检测到设备数量: {Microphone.devices.Length}");
+            Log.Info($"[Mic Debug] 检测到设备数量: {Microphone.devices.Length}");
             if (Microphone.devices.Length > 0)
             {
                 foreach (var d in Microphone.devices)
                 {
-                    Logger.LogInfo($"[Mic Debug] 可用设备: {d}");
+                    Log.Info($"[Mic Debug] 可用设备: {d}");
                 }
             }
             // --------------------
 
             if (Microphone.devices.Length == 0)
             {
-                Logger.LogError("未检测到麦克风！(Microphone.devices is empty)");
+                Log.Error("未检测到麦克风！(Microphone.devices is empty)");
                 // 可以在屏幕上显示个错误提示
                 _playerInput = "[Error: No Mic Found]"; 
                 return;
@@ -1099,7 +1099,7 @@ namespace ChillAIMod
             _microphoneDevice = Microphone.devices[0];
             _recordingClip = Microphone.Start(_microphoneDevice, false, MaxRecordingSeconds, RecordingFrequency);
             _isRecording = true;
-            Logger.LogInfo($"开始录音: {_microphoneDevice}");
+            Log.Info($"开始录音: {_microphoneDevice}");
         }
 
         void StopRecordingAndRecognize()
@@ -1110,7 +1110,7 @@ namespace ChillAIMod
             int position = Microphone.GetPosition(_microphoneDevice);
             Microphone.End(_microphoneDevice);
             _isRecording = false;
-            Logger.LogInfo($"停止录音，采样点: {position}");
+            Log.Info($"停止录音，采样点: {position}");
 
             // 2. 剪裁有效音频 (去掉末尾的静音/空白部分)
             if (position <= 0) return; // 录音太短
@@ -1133,36 +1133,35 @@ namespace ChillAIMod
             yield return StartCoroutine(ASRClient.SendAudioToASR(
                 wavData,
                 _sovitsUrlConfig.Value,
-                Logger,
                 (text) => recognizedResult = text
             ));
 
             // B. 根据拿回的结果，在主类决定下一步业务走向
             if (!string.IsNullOrEmpty(recognizedResult))
             {
-                Logger.LogInfo($"[Workflow] ASR 成功，开始进入 AI 思考流程: {recognizedResult}");
+                Log.Info($"[Workflow] ASR 成功，开始进入 AI 思考流程: {recognizedResult}");
 
                 // 这里触发 AI 处理流程
                 yield return StartCoroutine(AIProcessRoutine(recognizedResult));
             }
             else
             {
-                Logger.LogWarning("[Workflow] ASR 未能识别到有效文本");
+                Log.Warning("[Workflow] ASR 未能识别到有效文本");
                 _isProcessing = false; // 如果识别失败，在这里解锁 UI
             }
         }
         void OnApplicationQuit()
         {
-            Logger.LogInfo("[Chill AI Mod] 退出中...");
+            Log.Info("[Chill AI Mod] 退出中...");
             
             // 【保存记忆系统】
             if (_hierarchicalMemory != null && _experimentalMemoryConfig.Value)
             {
-                Logger.LogInfo("[HierarchicalMemory] 正在保存记忆...");
+                Log.Info("[HierarchicalMemory] 正在保存记忆...");
                 _hierarchicalMemory.SaveToFile();
             }
             
-            Logger.LogInfo("[Chill AI Mod] 正在停止TTS轮询...");
+            Log.Info("[Chill AI Mod] 正在停止TTS轮询...");
             if (_ttsHealthCheckCoroutine != null)
             {
                 StopCoroutine(_ttsHealthCheckCoroutine);
@@ -1172,12 +1171,12 @@ namespace ChillAIMod
             {   
                 try
                 {
-                    ProcessHelper.KillProcessTree(_launchedTTSProcess , Logger);
-                    Logger.LogInfo("TTS 服务已关闭");
+                    ProcessHelper.KillProcessTree(_launchedTTSProcess);
+                    Log.Info("TTS 服务已关闭");
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogWarning($"关闭 TTS 服务时出错: {ex.Message}");
+                    Log.Warning($"关闭 TTS 服务时出错: {ex.Message}");
                 }
             }
         }
@@ -1218,8 +1217,8 @@ namespace ChillAIMod
         /// </summary>
         private IEnumerator CallLlmForSummaryCoroutine(string prompt, Action<string> onComplete)
         {
-            Logger.LogInfo("[HierarchicalMemory] >>> 开始调用 LLM 进行总结...");
-            
+            Log.Info("[HierarchicalMemory] >>> 开始调用 LLM 进行总结...");
+
             string apiKey = _apiKeyConfig.Value;
             string modelName = _modelConfig.Value;
             string extraJson = _useOllama.Value ? $@",""stream"": false" : "";
@@ -1236,11 +1235,11 @@ namespace ChillAIMod
                 ]{extraJson} 
             }}";
 
-            Logger.LogInfo($"[HierarchicalMemory] 发送总结请求到: {_chatApiUrlConfig.Value}");
-            Logger.LogInfo($"[HierarchicalMemory] Prompt 预览: {prompt.Substring(0, Math.Min(200, prompt.Length))}...");
+            Log.Info($"[HierarchicalMemory] 发送总结请求到: {_chatApiUrlConfig.Value}");
+            Log.Info($"[HierarchicalMemory] Prompt 预览: {prompt.Substring(0, Math.Min(200, prompt.Length))}...");
             if (_logApiRequestBodyConfig.Value)
             {
-                Logger.LogInfo($"[HierarchicalMemory] 完整请求体:\n{jsonBody}");
+                Log.Info($"[HierarchicalMemory] 完整请求体:\n{jsonBody}");
             }
 
             string apiUrl = GetApiUrlForThinkMode();
@@ -1255,29 +1254,29 @@ namespace ChillAIMod
                     request.SetRequestHeader("Authorization", "Bearer " + apiKey);
                 }
 
-                Logger.LogInfo("[HierarchicalMemory] 正在等待 API 响应...");
+                Log.Info("[HierarchicalMemory] 正在等待 API 响应...");
                 yield return request.SendWebRequest();
 
                 if (request.result == UnityWebRequest.Result.Success)
                 {
-                    Logger.LogInfo($"[HierarchicalMemory] API 响应成功: {request.downloadHandler.text.Substring(0, Math.Min(200, request.downloadHandler.text.Length))}...");
+                    Log.Info($"[HierarchicalMemory] API 响应成功: {request.downloadHandler.text.Substring(0, Math.Min(200, request.downloadHandler.text.Length))}...");
                     
                     string response = _useOllama.Value
-                        ? ResponseParser.ExtractContentFromOllama(request.downloadHandler.text , Logger)
+                        ? ResponseParser.ExtractContentFromOllama(request.downloadHandler.text)
                         : ResponseParser.ExtractContentRegex(request.downloadHandler.text);
 
-                    Logger.LogInfo($"[HierarchicalMemory] 提取的总结结果: {response}");
+                    Log.Info($"[HierarchicalMemory] 提取的总结结果: {response}");
                     onComplete?.Invoke(response);
                 }
                 else
                 {
-                    Logger.LogError($"[HierarchicalMemory] 总结请求失败: {request.error}");
-                    Logger.LogError($"[HierarchicalMemory] 响应代码: {request.responseCode}");
+                    Log.Error($"[HierarchicalMemory] 总结请求失败: {request.error}");
+                    Log.Error($"[HierarchicalMemory] 响应代码: {request.responseCode}");
                     onComplete?.Invoke("[总结失败]");
                 }
             }
             
-            Logger.LogInfo("[HierarchicalMemory] <<< 总结调用完成");
+            Log.Info("[HierarchicalMemory] <<< 总结调用完成");
         }
 
         /// <summary>
@@ -1294,7 +1293,7 @@ namespace ChillAIMod
                 if (baseUrl.Contains("/v1/chat/completions"))
                 {
                     baseUrl = baseUrl.Replace("/v1/chat/completions", "/api/chat");
-                    Logger.LogInfo($"[Think Mode] 切换到 Ollama 原生 API: {baseUrl}");
+                    Log.Info($"[Think Mode] 切换到 Ollama 原生 API: {baseUrl}");
                 }
                 // 如果URL已经是 /api/chat 或其他格式，保持不变
             }
@@ -1339,7 +1338,7 @@ namespace ChillAIMod
             if (_hierarchicalMemory != null && _experimentalMemoryConfig.Value)
             {
                 string memoryContext = _hierarchicalMemory.GetContext();
-                Logger.LogInfo($"[记忆系统] 当前记忆状态:\n{_hierarchicalMemory.GetMemoryStats()}");
+                Log.Info($"[记忆系统] 当前记忆状态:\n{_hierarchicalMemory.GetMemoryStats()}");
                 
                 // 如果有记忆内容，则拼接；否则只返回当前提示
                 if (!string.IsNullOrWhiteSpace(memoryContext))
