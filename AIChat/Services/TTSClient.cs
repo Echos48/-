@@ -23,7 +23,7 @@ namespace AIChat.Services
             string promptLang,
             ManualLogSource logger,
             Action<AudioClip> onComplete, 
-            int maxRetries = 3, 
+            int maxRetries = 2, 
             float timeoutSeconds = 90f,
             bool audioPathCheck = false)
         {
