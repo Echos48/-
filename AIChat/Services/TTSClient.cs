@@ -24,7 +24,7 @@ namespace AIChat.Services
             ManualLogSource logger,
             Action<AudioClip> onComplete, 
             int maxRetries = 3, 
-            float timeoutSeconds = 30f,
+            float timeoutSeconds = 90f,
             bool audioPathCheck = false)
         {
             if (audioPathCheck && !File.Exists(refPath))
