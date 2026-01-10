@@ -23,8 +23,8 @@ namespace AIChat.Services
             string promptLang,
             ManualLogSource logger,
             Action<AudioClip> onComplete, 
-            int maxRetries = 3, 
-            float timeoutSeconds = 30f,
+            int maxRetries = , 
+            float timeoutSeconds = 90f,
             bool audioPathCheck = false)
         {
             if (audioPathCheck && !File.Exists(refPath))
